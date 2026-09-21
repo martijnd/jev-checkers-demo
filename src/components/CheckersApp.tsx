@@ -12,6 +12,11 @@ import {
   serializeGame,
 } from '@/lib/checkers';
 import type { CaptureKind, GameState, Piece } from '@/lib/checkers';
+import {
+  EMPTY_USAGE_TOTALS,
+  addUsageToTotals,
+  type UsageTotals,
+} from '@/lib/jev/cost';
 import { buildJevRequest } from '@/lib/jev/state';
 import type { JevMoveResponse, JevRequest } from '@/lib/jev/types';
 
@@ -100,6 +105,7 @@ export function CheckersApp() {
     response: null,
     error: null,
   });
+  const [usageTotals, setUsageTotals] = useState<UsageTotals>(EMPTY_USAGE_TOTALS);
   const abortRef = useRef<AbortController | null>(null);
 
   const lastPath =
@@ -151,6 +157,7 @@ export function CheckersApp() {
       }
 
       const confirmedRequest = data.request ?? request;
+      setUsageTotals((current) => addUsageToTotals(current, data.usage));
       setJev({
         status: 'animating',
         request: confirmedRequest,
@@ -210,6 +217,7 @@ export function CheckersApp() {
     setSelected(null);
     setPreviewNotation(null);
     setJev({ status: 'idle', request: null, response: null, error: null });
+    setUsageTotals(EMPTY_USAGE_TOTALS);
   }, []);
 
   const capturedByYou = useMemo(
@@ -334,6 +342,7 @@ export function CheckersApp() {
           error={jev.error}
           previewNotation={previewNotation}
           playedNotation={jev.response?.selectedMove ?? null}
+          usageTotals={usageTotals}
           onPreview={setPreviewNotation}
           onRetry={() => {
             if (game.sideToMove === 'white' && game.result === 'playing') {

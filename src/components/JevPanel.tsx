@@ -2,7 +2,18 @@
 
 import { useMemo, useState } from "react";
 
-import { JsonFullscreen, JsonPreview, JsonToolbar, formatJson } from "@/components/JsonView";
+import {
+  JsonFullscreen,
+  JsonPreview,
+  JsonToolbar,
+  formatJson,
+} from "@/components/JsonView";
+import {
+  JEV_INPUT_USD_PER_MILLION,
+  formatTokenCount,
+  formatUsd,
+  type UsageTotals,
+} from "@/lib/jev/cost";
 import type { JevMoveResponse, JevRequest } from "@/lib/jev/types";
 
 interface JevPanelProps {
@@ -13,6 +24,7 @@ interface JevPanelProps {
   error: string | null;
   previewNotation: string | null;
   playedNotation: string | null;
+  usageTotals: UsageTotals;
   onPreview: (notation: string | null) => void;
   onRetry: () => void;
 }
@@ -28,7 +40,10 @@ function SkeletonRows() {
         <div key={index} className="flex items-center gap-3">
           <div className="h-4 w-5 rounded bg-white/8" />
           <div className="h-4 w-16 rounded bg-white/8" />
-          <div className="skeleton-bar h-2 flex-1 rounded-full" style={{ animationDelay: `${index * 70}ms` }} />
+          <div
+            className="skeleton-bar h-2 flex-1 rounded-full"
+            style={{ animationDelay: `${index * 70}ms` }}
+          />
         </div>
       ))}
     </div>
@@ -48,7 +63,9 @@ function SentToJev({
 
   return (
     <section className="mt-6 border-t border-gold/15 pt-4">
-      <h3 className="mb-3 text-sm font-semibold tracking-wide text-cream/70 uppercase">Sent to Jev</h3>
+      <h3 className="mb-3 text-sm font-semibold tracking-wide text-cream/70 uppercase">
+        Sent to Jev
+      </h3>
       <dl className="grid gap-3 text-sm">
         <div>
           <dt className="text-cream/45">Model</dt>
@@ -56,14 +73,19 @@ function SentToJev({
         </div>
         <div>
           <dt className="text-cream/45">Question</dt>
-          <dd className="mt-1 leading-6 text-cream/80">{request.questions.bestMove.instructions}</dd>
+          <dd className="mt-1 leading-6 text-cream/80">
+            {request.questions.bestMove.instructions}
+          </dd>
         </div>
         <div>
           <dt className="text-cream/45">Choice options ({options.length})</dt>
           <dd>
             <ul className="mt-2 flex flex-col gap-1.5">
               {options.map(([notation, description]) => (
-                <li key={notation} className="font-mono text-[12px] leading-5 text-cream/80">
+                <li
+                  key={notation}
+                  className="font-mono text-[12px] leading-5 text-cream/80"
+                >
                   <span className="text-gold">{notation}</span>
                   <span className="text-cream/40"> - </span>
                   <span className="font-sans text-cream/70">{description}</span>
@@ -83,7 +105,9 @@ function SentToJev({
       </dl>
       <div className="mt-4">
         <div className="flex items-center justify-between gap-3">
-          <h4 className="text-xs tracking-wide text-cream/50 uppercase">Full request JSON</h4>
+          <h4 className="text-xs tracking-wide text-cream/50 uppercase">
+            Full request JSON
+          </h4>
           <JsonToolbar text={requestJson} onFullscreen={onFullscreen} />
         </div>
         <JsonPreview text={requestJson} />
@@ -100,6 +124,7 @@ export function JevPanel({
   error,
   previewNotation,
   playedNotation,
+  usageTotals,
   onPreview,
   onRetry,
 }: JevPanelProps) {
@@ -110,7 +135,8 @@ export function JevPanel({
     [request],
   );
   const responseJson = useMemo(
-    () => (response == null ? null : formatJson(response.raw, "No response yet.")),
+    () =>
+      response == null ? null : formatJson(response.raw, "No response yet."),
     [response],
   );
 
@@ -128,12 +154,16 @@ export function JevPanel({
           <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div>
               <dt className="text-cream/45">Selected move</dt>
-              <dd className="font-mono text-lg text-gold">{response.selectedMove}</dd>
+              <dd className="font-mono text-lg text-gold">
+                {response.selectedMove}
+              </dd>
             </div>
             <div>
               <dt className="text-cream/45">Confidence</dt>
               <dd className="text-lg text-cream">
-                {response.confidence === null ? "—" : formatPercent(response.confidence)}
+                {response.confidence === null
+                  ? "—"
+                  : formatPercent(response.confidence)}
               </dd>
             </div>
             <div>
@@ -142,22 +172,63 @@ export function JevPanel({
             </div>
             <div>
               <dt className="text-cream/45">Response speed</dt>
-              <dd className="font-mono text-cream/90">{response.latencyMs} ms</dd>
+              <dd className="font-mono text-cream/90">
+                {response.latencyMs} ms
+              </dd>
             </div>
             <div className="col-span-2">
               <dt className="text-cream/45">Tokens</dt>
               <dd className="font-mono text-cream/80">
-                {response.usage.input_tokens === undefined && response.usage.output_tokens === undefined
+                {response.usage.input_tokens === undefined &&
+                response.usage.output_tokens === undefined
                   ? "Not reported"
-                  : `${response.usage.input_tokens ?? "—"} in / ${response.usage.output_tokens ?? "—"} out`}
+                  : `${formatTokenCount(response.usage.input_tokens)} in / ${formatTokenCount(response.usage.output_tokens)} out`}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-cream/45">This request</dt>
+              <dd className="font-mono text-lg text-gold">
+                {formatUsd(response.usage.estimated_usd)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-cream/45">Game total</dt>
+              <dd className="font-mono text-lg text-cream">
+                {formatUsd(usageTotals.estimatedUsd)}
+              </dd>
+            </div>
+          </dl>
+        ) : usageTotals.requests > 0 ? (
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <div>
+              <dt className="text-cream/45">Game total</dt>
+              <dd className="font-mono text-lg text-cream">
+                {formatUsd(usageTotals.estimatedUsd)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-cream/45">Jev calls</dt>
+              <dd className="font-mono text-lg text-cream">
+                {usageTotals.requests}
               </dd>
             </div>
           </dl>
         ) : null}
+        {usageTotals.requests > 0 || (response !== null && !thinking) ? (
+          <p className="mt-3 text-[11px] leading-5 text-cream/45">
+            Estimated list price at ${JEV_INPUT_USD_PER_MILLION}/1M input
+            tokens. Output is free.
+            {usageTotals.requests > 0
+              ? ` ${usageTotals.requests} ${usageTotals.requests === 1 ? "call" : "calls"}, ${formatTokenCount(usageTotals.inputTokens)} input tokens this game.`
+              : ""}
+          </p>
+        ) : null}
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-        <h3 className="mb-3 text-sm font-semibold tracking-wide text-cream/70 uppercase">Top 10 moves</h3>
+        <h3 className="mb-3 text-sm font-semibold tracking-wide text-cream/70 uppercase">
+          Top 10 moves
+        </h3>
         {thinking ? <SkeletonRows /> : null}
         {!thinking && error !== null ? (
           <div className="rounded-lg border border-red-400/40 bg-red-950/40 p-4">
@@ -169,9 +240,10 @@ export function JevPanel({
         ) : null}
         {!thinking && error === null && response === null ? (
           <p className="text-sm leading-6 text-cream/65">
-            Jev scores the legal moves from this position. It does not invent moves or write
-            commentary. After you move, the app sends White&apos;s options as a Choice question and
-            plays Jev&apos;s highest-probability legal move.
+            Jev scores the legal moves from this position. It does not invent
+            moves or write commentary. After you move, the app sends
+            White&apos;s options as a Choice question and plays Jev&apos;s
+            highest-probability legal move.
           </p>
         ) : null}
         {!thinking && error === null && response !== null ? (
@@ -190,12 +262,18 @@ export function JevPanel({
                       isPreview ? "rank-row-preview" : "",
                     ].join(" ")}
                   >
-                    <span className="w-6 text-right font-mono text-cream/50">{move.rank}</span>
-                    <span className="w-[5.5rem] font-mono text-cream">{move.notation}</span>
+                    <span className="w-6 text-right font-mono text-cream/50">
+                      {move.rank}
+                    </span>
+                    <span className="w-[5.5rem] font-mono text-cream">
+                      {move.notation}
+                    </span>
                     <span className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/10">
                       <span
                         className="absolute inset-y-0 left-0 rounded-full bg-gold"
-                        style={{ width: `${Math.max(move.probability * 100, 1.5)}%` }}
+                        style={{
+                          width: `${Math.max(move.probability * 100, 1.5)}%`,
+                        }}
                       />
                     </span>
                     <span className="w-14 text-right font-mono text-sm text-cream/80">
@@ -218,7 +296,9 @@ export function JevPanel({
 
       <footer className="shrink-0 border-t border-gold/20 px-5 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-xs tracking-wide text-cream/50 uppercase">Raw System One response</h3>
+          <h3 className="text-xs tracking-wide text-cream/50 uppercase">
+            Raw System One response
+          </h3>
           <JsonToolbar
             text={responseJson ?? "No response yet."}
             onFullscreen={() => setJsonTab("response")}

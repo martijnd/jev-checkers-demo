@@ -2,6 +2,7 @@ import { createGateway, experimental_evaluate } from "ai";
 import type { JSONObject } from "@ai-sdk/provider";
 import { findMove, getLegalMoves } from "@/lib/checkers";
 import type { GameState } from "@/lib/checkers";
+import { usageFromTokens } from "./cost";
 import { buildJevRequest } from "./state";
 import { JEV_MODEL } from "./types";
 import type { JevMoveResponse, RankedMove } from "./types";
@@ -95,10 +96,10 @@ export async function evaluateJevMove(
 
   const confidence = readConfidence(result.providerMetadata, "bestMove");
   const model = result.response.modelId || JEV_MODEL;
-  const usage = {
-    input_tokens: result.usage.inputTokens,
-    output_tokens: result.usage.outputTokens,
-  };
+  const usage = usageFromTokens({
+    inputTokens: result.usage.inputTokens,
+    outputTokens: result.usage.outputTokens,
+  });
 
   return {
     selectedMove: selected.notation,

@@ -1,4 +1,5 @@
 import type { CaptureKind, LastMove } from "@/lib/checkers";
+import type { JevUsage } from "./cost";
 
 export const JEV_MODEL = "typesafe-ai/jev";
 
@@ -56,18 +57,12 @@ export interface JevMoveResponse {
   confidence: number | null;
   model: string;
   latencyMs: number;
-  usage: {
-    input_tokens: number | undefined;
-    output_tokens: number | undefined;
-  };
+  usage: JevUsage;
   raw: {
     choice: string;
     probabilities: Record<string, number>;
     confidence: number | null;
-    usage: {
-      input_tokens: number | undefined;
-      output_tokens: number | undefined;
-    };
+    usage: JevUsage;
     model: string;
   };
   request: JevRequest;
