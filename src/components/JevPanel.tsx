@@ -1,5 +1,8 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
+import { JsonFullscreen, JsonPreview, JsonToolbar, formatJson } from "@/components/JsonView";
 import type { JevMoveResponse, JevRequest } from "@/lib/jev/types";
 
 interface JevPanelProps {
@@ -32,7 +35,15 @@ function SkeletonRows() {
   );
 }
 
-function SentToJev({ request }: { request: JevRequest }) {
+function SentToJev({
+  request,
+  requestJson,
+  onFullscreen,
+}: {
+  request: JevRequest;
+  requestJson: string;
+  onFullscreen: () => void;
+}) {
   const options = Object.entries(request.questions.bestMove.criteria);
 
   return (
@@ -70,14 +81,13 @@ function SentToJev({ request }: { request: JevRequest }) {
           </dd>
         </div>
       </dl>
-      <details className="mt-3">
-        <summary className="cursor-pointer text-xs tracking-wide text-cream/50 uppercase">
-          Full request JSON
-        </summary>
-        <pre className="mt-3 max-h-72 overflow-auto rounded-md bg-black/40 p-3 font-mono text-[11px] leading-5 text-cream/80">
-          {JSON.stringify(request, null, 2)}
-        </pre>
-      </details>
+      <div className="mt-4">
+        <div className="flex items-center justify-between gap-3">
+          <h4 className="text-xs tracking-wide text-cream/50 uppercase">Full request JSON</h4>
+          <JsonToolbar text={requestJson} onFullscreen={onFullscreen} />
+        </div>
+        <JsonPreview text={requestJson} />
+      </div>
     </section>
   );
 }
@@ -93,11 +103,20 @@ export function JevPanel({
   onPreview,
   onRetry,
 }: JevPanelProps) {
+  const [jsonTab, setJsonTab] = useState<"request" | "response" | null>(null);
   const topMoves = response?.ranked.slice(0, 10) ?? [];
+  const requestJson = useMemo(
+    () => (request == null ? null : formatJson(request, "No request yet.")),
+    [request],
+  );
+  const responseJson = useMemo(
+    () => (response == null ? null : formatJson(response.raw, "No response yet.")),
+    [response],
+  );
 
   return (
     <aside className="jev-panel flex h-full min-h-0 flex-col">
-      <header className="border-b border-gold/20 px-5 py-4">
+      <header className="shrink-0 border-b border-gold/20 px-5 py-4">
         <p className="text-[11px] font-semibold tracking-[0.22em] text-gold/80 uppercase">
           TypeSafe System One
         </p>
@@ -188,19 +207,32 @@ export function JevPanel({
             })}
           </ol>
         ) : null}
-        {request != null ? <SentToJev request={request} /> : null}
+        {request != null && requestJson != null ? (
+          <SentToJev
+            request={request}
+            requestJson={requestJson}
+            onFullscreen={() => setJsonTab("request")}
+          />
+        ) : null}
       </div>
 
-      <footer className="border-t border-gold/20 px-5 py-3">
-        <details>
-          <summary className="cursor-pointer text-xs tracking-wide text-cream/50 uppercase">
-            Raw System One response
-          </summary>
-          <pre className="mt-3 max-h-56 overflow-auto rounded-md bg-black/40 p-3 font-mono text-[11px] leading-5 text-cream/80">
-            {response === null ? "No response yet." : JSON.stringify(response.raw, null, 2)}
-          </pre>
-        </details>
+      <footer className="shrink-0 border-t border-gold/20 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-xs tracking-wide text-cream/50 uppercase">Raw System One response</h3>
+          <JsonToolbar
+            text={responseJson ?? "No response yet."}
+            onFullscreen={() => setJsonTab("response")}
+          />
+        </div>
       </footer>
+      {jsonTab !== null ? (
+        <JsonFullscreen
+          requestText={requestJson}
+          responseText={responseJson}
+          initialTab={jsonTab}
+          onClose={() => setJsonTab(null)}
+        />
+      ) : null}
     </aside>
   );
 }

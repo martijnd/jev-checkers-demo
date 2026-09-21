@@ -225,7 +225,7 @@ export function CheckersApp() {
     <div className='app-shell'>
       <div className='app-frame'>
         <section className='board-column'>
-          <header className='mb-5 flex items-end justify-between gap-4'>
+          <header className='mb-5 flex shrink-0 items-end justify-between gap-4'>
             <div>
               <p className='text-[11px] font-semibold tracking-[0.24em] text-gold/80 uppercase'>
                 English draughts
@@ -265,7 +265,7 @@ export function CheckersApp() {
             </div>
           </header>
 
-          <div className='status-row'>
+          <div className='status-row shrink-0'>
             <span
               className={jev.status === 'thinking' ? 'text-gold' : 'text-cream'}
             >
@@ -281,7 +281,7 @@ export function CheckersApp() {
             )}
           </div>
 
-          <div className='captured-row'>
+          <div className='captured-row shrink-0'>
             <div className='flex items-center gap-2'>
               <span className='text-xs tracking-wide text-cream/45 uppercase'>
                 You captured
@@ -312,16 +312,18 @@ export function CheckersApp() {
             </div>
           </div>
 
-          <Board
-            game={game}
-            selected={selected}
-            lastPath={lastPath}
-            previewPath={previewPath}
-            disabled={boardLocked}
-            onSelect={setSelected}
-            onMove={onMove}
-            onInteraction={() => setPreviewNotation(null)}
-          />
+          <div className='board-stage'>
+            <Board
+              game={game}
+              selected={selected}
+              lastPath={lastPath}
+              previewPath={previewPath}
+              disabled={boardLocked}
+              onSelect={setSelected}
+              onMove={onMove}
+              onInteraction={() => setPreviewNotation(null)}
+            />
+          </div>
         </section>
 
         <JevPanel
